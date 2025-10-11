@@ -1,105 +1,85 @@
-# gerador_docx.py
-
-import re
-from io import BytesIO
 from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from io import BytesIO
+import os
 
-# --- FUNÇÃO ESSENCIAL QUE ESTAVA FALTANDO E FOI REINSERIDA ---
-def extrair_nome_aluno(texto_completo_ia):
-    """Extrai o nome do aluno da seção '### Nome do Aluno'."""
-    match = re.search(r"### Nome do Aluno\s*\n(.*?)\n", texto_completo_ia, re.DOTALL)
-    if match:
-        nome = match.group(1).strip()
-        if nome:
-            return nome
-    return "Nome_Nao_Identificado"
-
-def extrair_secao(texto_completo, titulo_secao):
-    """Extrai o conteúdo de uma seção específica da resposta da IA."""
-    padrao = re.compile(f"### {titulo_secao}(.*?)(?=### |$)", re.DOTALL)
-    match = padrao.search(texto_completo)
-    if match:
-        return match.group(1).strip()
-    return ""
-
-def buscar_e_substituir(doc_obj, substituicoes):
-    """Busca e substitui placeholders em todo o documento (parágrafos e tabelas)."""
-    # Para parágrafos
-    for p in doc_obj.paragraphs:
-        # Cria uma cópia da lista de runs para iterar
-        runs = list(p.runs)
-        for i, run in enumerate(runs):
-            for key, val in substituicoes.items():
-                if key in run.text:
-                    # Substitui o texto
-                    run.text = run.text.replace(key, str(val))
-
-    # Para tabelas (chamada recursiva para cada célula)
-    for table in doc_obj.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                buscar_e_substituir(cell, substituicoes)
-
-def deletar_paragrafo(paragraph):
-    """Remove um parágrafo do documento."""
-    p = paragraph._element
-    if p.getparent() is not None:
-        p.getparent().remove(p)
-        p._p = p._element = None
-
-def criar_relatorio_avancado_docx(analise_completa_ia):
-    """Cria o relatório .docx final preenchendo o arquivo 'template.docx'."""
+def preencher_e_gerar_docx(dados_redacao, caminho_template):
+    """
+    Preenche o template .docx preservando formatação e retorna o arquivo em bytes.
+    """
     try:
-        document = Document('template.docx')
+        document = Document(caminho_template)
 
-        # Dicionário com todos os placeholders e seus valores
-        contexto = {
-            '{{NOME_ALUNO}}': extrair_secao(analise_completa_ia, "Nome do Aluno"),
-            '{{TEMA}}': extrair_secao(analise_completa_ia, "Tema da Redação"),
-            '{{DATA}}': extrair_secao(analise_completa_ia, "Data da Redação"),
-            '{{COMENTARIOS}}': extrair_secao(analise_completa_ia, "Comentários Gerais"),
-            '{{NOTA_FINAL}}': extrair_secao(analise_completa_ia, "Nota Estimada"),
-            '{{ALERTA_ORIGINALIDADE}}': extrair_secao(analise_completa_ia, "Alerta de Originalidade")
+        # Acessa os dados aninhados de forma segura
+        analise_comps = dados_redacao.get('analise_competencias', {})
+        c1 = analise_comps.get('c1', {})
+        c2 = analise_comps.get('c2', {})
+        c3 = analise_comps.get('c3', {})
+        c4 = analise_comps.get('c4', {})
+        c5 = analise_comps.get('c5', {})
+
+        # Dicionário de substituições
+        substituicoes = {
+            '{{NOME_ALUNO}}': dados_redacao.get('nome_aluno', 'Não informado'),
+            '{{TEMA}}': dados_redacao.get('tema_redacao', 'Não informado'),
+            '{{DATA}}': dados_redacao.get('data_redacao', 'Não informada'),
+            '{{NOTA_TOTAL}}': str(dados_redacao.get('nota_final', 'N/A')),
+            '{{COMENTARIOS}}': dados_redacao.get('comentarios_gerais', ''),
+            '{{NOTA_C1}}': str(c1.get('nota', 'N/A')),
+            '{{ANALISE_C1}}': c1.get('analise', ''),
+            '{{NOTA_C2}}': str(c2.get('nota', 'N/A')),
+            '{{ANALISE_C2}}': c2.get('analise', ''),
+            '{{NOTA_C3}}': str(c3.get('nota', 'N/A')),
+            '{{ANALISE_C3}}': c3.get('analise', ''),
+            '{{NOTA_C4}}': str(c4.get('nota', 'N/A')),
+            '{{ANALISE_C4}}': c4.get('analise', ''),
+            '{{NOTA_C5}}': str(c5.get('nota', 'N/A')),
+            '{{ANALISE_C5}}': c5.get('analise', ''),
         }
 
-        # Extrai as informações de cada competência
-        analise_competencias = extrair_secao(analise_completa_ia, "Análise das Competências")
-        blocos = re.split(r'(?=\*\*Competência \d)', analise_competencias)
-        
-        for i in range(1, 6):
-            nota_encontrada = ""
-            analise_encontrada = ""
-            for bloco in blocos:
-                if f'**Competência {i}' in bloco:
-                    nota = re.search(r'\* \*\*Nota estimada:\*\* (.*?)\n', bloco)
-                    analise = re.search(r'\* \*\*Análise.*?\*\* (.*)', bloco, re.DOTALL)
-                    if nota: nota_encontrada = nota.group(1).strip()
-                    if analise: analise_encontrada = analise.group(1).strip()
-                    break
-            contexto[f'{{{{NOTA_C{i}}}}}'] = nota_encontrada
-            contexto[f'{{{{ANALISE_C{i}}}}}'] = analise_encontrada
-        
-        # Chama a função para substituir TUDO de uma vez, incluindo as tabelas
-        buscar_e_substituir(document, contexto)
+        # Lógica para o alerta de originalidade
+        alerta = dados_redacao.get('alerta_originalidade')
+        if alerta:
+            substituicoes['{{ALERTA_ORIGINALIDADE}}'] = f"⚠️ ALERTA DE ORIGINALIDADE: {alerta}"
+        else:
+            substituicoes['{{ALERTA_ORIGINALIDADE}}'] = ""
 
-        # Lógica para remover a seção de Alerta de Originalidade se estiver vazia
-        if not contexto['{{ALERTA_ORIGINALIDADE}}']:
-            paragrafos_para_deletar = []
-            for p in document.paragraphs:
-                # Marca para remoção se encontrar o título ou o placeholder
-                if 'Alerta de Originalidade' in p.text or '{{ALERTA_ORIGINALIDADE}}' in p.text:
-                    paragrafos_para_deletar.append(p)
-            for p in paragrafos_para_deletar:
-                deletar_paragrafo(p)
+        # Substituir placeholders em parágrafos PRESERVANDO formatação
+        for paragrafo in document.paragraphs:
+            substituir_em_paragrafo(paragrafo, substituicoes)
+
+        # Substituir placeholders em tabelas PRESERVANDO formatação
+        for tabela in document.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for paragrafo in celula.paragraphs:
+                        substituir_em_paragrafo(paragrafo, substituicoes)
         
+        # Salva o documento em um buffer de memória
         doc_buffer = BytesIO()
         document.save(doc_buffer)
         doc_buffer.seek(0)
         return doc_buffer
 
     except FileNotFoundError:
-        print("❌ ERRO CRÍTICO: O arquivo 'template.docx' não foi encontrado. Certifique-se de que ele está na mesma pasta do projeto.")
+        print(f"❌ ERRO CRÍTICO: O arquivo '{caminho_template}' não foi encontrado.")
         return None
     except Exception as e:
-        print(f"❌ Erro ao gerar o arquivo DOCX a partir do template: {e}")
+        print(f"❌ Erro ao gerar o arquivo DOCX: {e}")
         return None
+
+
+def substituir_em_paragrafo(paragrafo, substituicoes):
+    """
+    Substitui placeholders em um parágrafo preservando a formatação.
+    """
+    # Verifica se há algum placeholder no texto completo do parágrafo
+    texto_completo = paragrafo.text
+    
+    for placeholder, valor in substituicoes.items():
+        if placeholder in texto_completo:
+            # Substitui preservando formatação
+            for run in paragrafo.runs:
+                if placeholder in run.text:
+                    run.text = run.text.replace(placeholder, str(valor))

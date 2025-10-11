@@ -1,5 +1,5 @@
 # corrigir_em_lote.py
-import os.path
+import os
 import io
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -8,14 +8,17 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 
-from logica_ia import analisar_imagem_com_gemini_multimodal, criar_documento_docx
-from gerador_docx import extrair_nome_aluno
+import logica_ia
+import gerador_docx
 
+# --- Constantes ---
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 ID_PASTA_ENTRADA = "1c_8ybbo6HAhMxlOeNKX71PPF8TfySKx-"
 ID_PASTA_SAIDA = "16xRIPkBY8gRp9vNzxgH1Ex4GhTnkzbed"
+TEMP_DIR = "temp_lote"
 
-def autenticar():
+def autenticar_drive():
+    """Autentica com a API do Google Drive."""
     creds = None
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
@@ -31,13 +34,23 @@ def autenticar():
 
 def main():
     print("Iniciando assistente de correção em lote...")
-    creds = autenticar()
+    os.makedirs(TEMP_DIR, exist_ok=True)
+    
     try:
-        service = build("drive", "v3", credentials=creds)
+        # --- 1. CONFIGURAÇÃO INICIAL ---
+        logica_ia.configurar_ia() # <-- CHAMA A NOVA FUNÇÃO
+        print("✅ Autenticação com API Gemini configurada.")
+        
+        creds_drive = autenticar_drive()
+        service_drive = build("drive", "v3", credentials=creds_drive)
         print("✅ Autenticação com Google Drive bem-sucedida.")
+        
+        prompt = logica_ia.carregar_prompt()
+        print("✅ Prompt da IA carregado.")
 
+        # --- O resto do código continua o mesmo ---
         query = f"'{ID_PASTA_ENTRADA}' in parents and (mimeType='image/jpeg' or mimeType='image/png')"
-        results = service.files().list(q=query, fields="nextPageToken, files(id, name)").execute()
+        results = service_drive.files().list(q=query, fields="files(id, name)").execute()
         items = results.get("files", [])
 
         if not items:
@@ -46,42 +59,42 @@ def main():
         print(f"✅ Encontradas {len(items)} redações para corrigir.\n")
 
         for item in items:
-            file_id = item["id"]
-            file_name = item["name"]
+            file_id, file_name = item["id"], item["name"]
             print(f"--- Processando: {file_name} ---")
 
-            print("   1/4 - Baixando imagem do Drive...")
-            request = service.files().get_media(fileId=file_id)
-            file_bytes = request.execute()
+            caminho_imagem_temp = os.path.join(TEMP_DIR, file_name)
 
-            print("   2/4 - Enviando para análise da IA...")
-            analise_completa = analisar_imagem_com_gemini_multimodal(file_bytes)
-            if "❌" in analise_completa:
-                print(f"   ❗️ Erro na análise da IA para {file_name}. Motivo: {analise_completa}")
+            request = service_drive.files().get_media(fileId=file_id)
+            with open(caminho_imagem_temp, "wb") as f:
+                f.write(request.execute())
+            
+            dados_redacao = logica_ia.analisar_redacao(caminho_imagem_temp, prompt)
+            
+            if not dados_redacao:
+                print(f"   ❗️ Erro na análise da IA. Pulando.")
+                os.remove(caminho_imagem_temp)
                 continue
 
-            print("   3/4 - Gerando relatório .docx...")
-            arquivo_docx_bytes = criar_documento_docx(analise_completa)
+            arquivo_docx_bytes = gerador_docx.preencher_e_gerar_docx(dados_redacao, 'template.docx')
             
-            # --- CORREÇÃO DE ERRO ---
-            # Verifica se o arquivo foi criado com sucesso antes de prosseguir
-            if arquivo_docx_bytes is None:
-                print(f"   ❗️ Falha ao gerar o arquivo .docx para {file_name}. Pulando upload.")
+            if not arquivo_docx_bytes:
+                print(f"   ❗️ Falha ao gerar o arquivo .docx. Pulando.")
+                os.remove(caminho_imagem_temp)
                 continue
             
-            print("   4/4 - Enviando relatório corrigido para o Drive...")
-            nome_aluno = extrair_nome_aluno(analise_completa)
-            nome_arquivo_final = f"correcao_{nome_aluno.replace(' ', '_')}.docx"
-            file_metadata = {
-                "name": nome_arquivo_final,
-                "parents": [ID_PASTA_SAIDA]
-            }
-            media = MediaIoBaseUpload(io.BytesIO(arquivo_docx_bytes.getvalue()), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-            service.files().create(body=file_metadata, media_body=media, fields="id").execute()
-            print(f"   ✅ Relatório de '{nome_aluno}' salvo com sucesso!\n")
+            nome_aluno = dados_redacao.get('nome_aluno', 'Aluno').replace(' ', '_')
+            nome_arquivo_final = f"Correcao_{nome_aluno}_{file_id[:6]}.docx"
+            
+            file_metadata = {"name": nome_arquivo_final, "parents": [ID_PASTA_SAIDA]}
+            media = MediaIoBaseUpload(arquivo_docx_bytes, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            
+            service_drive.files().create(body=file_metadata, media_body=media, fields="id").execute()
+            print(f"   ✅ Relatório de '{nome_aluno}' salvo com sucesso no Drive!\n")
 
-    except HttpError as error:
-        print(f"Ocorreu um erro na API: {error}")
+            os.remove(caminho_imagem_temp)
+
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado: {e}")
 
 if __name__ == "__main__":
     main()

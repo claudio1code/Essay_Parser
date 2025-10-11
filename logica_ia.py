@@ -1,57 +1,65 @@
 # logica_ia.py
-
-import os
-from dotenv import load_dotenv
-from io import BytesIO
 import google.generativeai as genai
-from google.oauth2 import service_account
 from PIL import Image
+import json
+import re
+import os
 
-# Importa a função correta
-from gerador_docx import criar_relatorio_avancado_docx
-
-# Carrega as variáveis de ambiente
-load_dotenv()
-
-def carregar_prompt(caminho_arquivo="prompt.txt"):
+def configurar_ia():
+    """
+    Configura a autenticação explicitamente apontando para o arquivo de credenciais.
+    """
     try:
-        with open(caminho_arquivo, 'r', encoding='utf-8') as f:
-            return f.read()
-    except Exception as e:
-        print(f"❌ ERRO ao carregar prompt: {e}")
-        return None
-
-def analisar_imagem_com_gemini_multimodal(conteudo_imagem_bytes):
-    try:
-        caminho_credenciais = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        if not caminho_credenciais:
-            return "❌ Credenciais do Google não encontradas no arquivo .env."
-
-        creds = service_account.Credentials.from_service_account_file(caminho_credenciais)
-        genai.configure(credentials=creds)
-
-        prompt_mestre = carregar_prompt()
-        if not prompt_mestre:
-            return "❌ ERRO CRÍTICO: Não foi possível carregar o prompt.txt."
-
-        imagem = Image.open(BytesIO(conteudo_imagem_bytes))
-        model = genai.GenerativeModel('models/gemini-2.5-flash-image-preview')
+        credentials_path = 'google-credentials.json'
+        if not os.path.exists(credentials_path):
+            raise FileNotFoundError(f"ERRO CRÍTICO: O arquivo de credenciais '{credentials_path}' não foi encontrado.")
         
-        response = model.generate_content([prompt_mestre, imagem])
-        return response.text
-    except Exception as e:
-        return f"❌ Ocorreu um erro ao conectar com a API do Gemini: {e}"
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
+        genai.configure(transport='rest')
 
-def criar_documento_docx(analise_completa_ia):
-    """
-    Chama o módulo especialista para criar o relatório avançado.
-    Esta função agora está corrigida.
-    """
-    try:
-        # A lógica de separar o texto não é mais necessária aqui.
-        # A função criar_relatorio_avancado_docx agora faz todo o trabalho.
-        return criar_relatorio_avancado_docx(analise_completa_ia)
     except Exception as e:
-        # Este print agora mostrará o erro vindo de criar_relatorio_avancado_docx
-        print(f"❌ Erro ao chamar o gerador de DOCX: {e}")
+        print(f"❌ ERRO ao configurar a API: {e}")
+        raise
+
+def carregar_prompt(caminho_prompt="prompt.txt"):
+    """Carrega o conteúdo do arquivo de prompt."""
+    try:
+        with open(caminho_prompt, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"❌ ERRO CRÍTICO: O arquivo de prompt '{caminho_prompt}' não foi encontrado.")
+        raise
+
+def analisar_redacao(caminho_imagem, prompt):
+    """
+    Envia a imagem para a IA e retorna a análise como um dicionário Python (de JSON).
+    """
+    # --- MUDANÇA FINAL E DEFINITIVA AQUI ---
+    # Usando o modelo multimodal mais recente e rápido, que é compatível com mais versões da API.
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # ----------------------------------------
+    try:
+        img = Image.open(caminho_imagem)
+        response = model.generate_content([prompt, img])
+        
+        resposta_texto = response.text
+        json_match = re.search(r'\{.*\}', resposta_texto, re.DOTALL)
+        
+        if json_match:
+            json_str = json_match.group(0)
+            try:
+                dados_redacao = json.loads(json_str)
+                return dados_redacao
+            except json.JSONDecodeError:
+                print(f"❌ ERRO: A IA retornou um JSON inválido. Resposta recebida:\n{json_str}")
+                return None
+        else:
+            print(f"❌ ERRO: Nenhuma estrutura JSON foi encontrada na resposta da IA. Resposta recebida:\n{resposta_texto}")
+            return None
+            
+    except FileNotFoundError:
+        print(f"❌ ERRO: A imagem não foi encontrada em '{caminho_imagem}'")
+        return None
+    except Exception as e:
+        print(f"❌ Ocorreu um erro na chamada da API Gemini: {e}")
         return None
