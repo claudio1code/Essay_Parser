@@ -34,10 +34,10 @@ def analisar_redacao(caminho_imagem, prompt):
     """
     Envia a imagem para a IA e retorna a análise como um dicionário Python (de JSON).
     """
-    # --- MUDANÇA FINAL E DEFINITIVA AQUI ---
-    # Usando o modelo multimodal mais recente e rápido, que é compatível com mais versões da API.
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    # ----------------------------------------
+    # --- AJUSTE FINAL E DEFINITIVO AQUI ---
+    # Usando o nome exato do modelo que a sua API listou.
+    model = genai.GenerativeModel('gemini-2.5-flash-image-preview')
+    # ------------------------------------
     try:
         img = Image.open(caminho_imagem)
         response = model.generate_content([prompt, img])

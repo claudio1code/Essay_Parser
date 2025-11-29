@@ -13,8 +13,8 @@ import gerador_docx
 
 # --- Constantes ---
 SCOPES = ["https://www.googleapis.com/auth/drive"]
-ID_PASTA_ENTRADA = "1c_8ybbo6HAhMxlOeNKX71PPF8TfySKx-"
-ID_PASTA_SAIDA = "16xRIPkBY8gRp9vNzxgH1Ex4GhTnkzbed"
+ID_PASTA_ENTRADA = "1SimtAn1HaOwUnI4CDLIVFaekE4mnpJnG"
+ID_PASTA_SAIDA = "1tBDudb199EVZnM1UoPCQxftw2Ux21Nvz"
 TEMP_DIR = "temp_lote"
 
 def autenticar_drive():
@@ -38,11 +38,16 @@ def main():
     
     try:
         # --- 1. CONFIGURAÇÃO INICIAL ---
-        logica_ia.configurar_ia() # <-- CHAMA A NOVA FUNÇÃO
+        logica_ia.configurar_ia()
         print("✅ Autenticação com API Gemini configurada.")
         
         creds_drive = autenticar_drive()
-        service_drive = build("drive", "v3", credentials=creds_drive)
+        
+        # --- MUDANÇA IMPORTANTE AQUI ---
+        # Adicionamos cache_discovery=False para forçar a busca por novos arquivos.
+        service_drive = build("drive", "v3", credentials=creds_drive, cache_discovery=False)
+        # -----------------------------
+        
         print("✅ Autenticação com Google Drive bem-sucedida.")
         
         prompt = logica_ia.carregar_prompt()
