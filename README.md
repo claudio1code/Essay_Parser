@@ -1,23 +1,25 @@
-# ✍️ Automated Essay Grader (Corretor de Redações com IA)
+# ✍️ Projeto Mãe Redação - Corretor de Redações com IA
 
-> Uma ferramenta de automação que utiliza Visão Computacional e LLMs (Google Gemini 1.5) para corrigir redações manuscritas com base nos critérios oficiais do ENEM, gerando relatórios detalhados em PDF/Docx.
+Bem-vindo ao **Projeto Mãe Redação**, uma solução inteligente para automatizar a correção de redações manuscritas. Utilizando o poder do modelo **Google Gemini 2.0 (Multimodal)**, o sistema lê imagens de textos manuscritos, realiza uma análise pedagógica completa baseada em competências e gera relatórios formatados em Word (.docx).
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
-![Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%201.5-orange)
-![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red)
-![License](https://img.shields.io/badge/License-MIT-green)
+![Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%202.0-orange)
+![Architecture](https://img.shields.io/badge/Architecture-Service%20Layer-purple)
 
-## 🎯 Sobre o Projeto
+## 🚀 Funcionalidades
 
-Este projeto foi desenvolvido para resolver o gargalo na correção de redações escolares. Diferente de corretores gramaticais comuns, este sistema é capaz de:
+- **Leitura de Manuscritos**: Capacidade avançada de OCR e interpretação de texto manuscrito via IA.
+- **Correção Pedagógica**: Avaliação detalhada baseada em competências (personalizável via prompt), com atribuição de notas e comentários construtivos.
+- **Interface Web Amigável**: Aplicação interativa construída com Streamlit para uploads e correções individuais rápidas.
+- **Processamento em Lote (Batch)**: Integração com o Google Drive para monitorar uma pasta, processar novas imagens automaticamente e salvar as correções em uma pasta de saída.
+- **Arquitetura Modular**: Código organizado em serviços (`services/`), facilitando manutenção e expansão.
+- **Configuração Segura**: Gerenciamento de credenciais via variáveis de ambiente e pasta `secrets/`.
 
-1.  **Ler manuscritos:** Aceita fotos de folhas de redação (JPG/PNG).
-2.  **Análise Pedagógica:** Avalia as 5 competências oficiais do ENEM (Norma Culta, Compreensão do Tema, Argumentação, Coesão, Proposta de Intervenção).
-3.  **Relatórios Automatizados:** Gera um arquivo `.docx` formatado com a nota e comentários detalhados.
-4.  **Modo Batch (Lote):** Possui um módulo de automação (`corrigir_em_lote.py`) que monitora uma pasta no Google Drive, corrige novas redações automaticamente e salva os relatórios em uma pasta de saída.
+## 📂 Estrutura do Projeto
 
-## 🛠️ Tecnologias Utilizadas
+O projeto segue o padrão **Service Layer**, separando a lógica de negócio dos scripts de execução:
 
+<<<<<<< HEAD
 * **Linguagem:** Python
 * **Inteligência Artificial:** Google Gemini 1.5 Flash (Multimodal Vision + Text)
 * **Interface:** Streamlit
@@ -61,23 +63,104 @@ Para monitorar e corrigir arquivos de uma pasta do Drive automaticamente:
    python corrigir_em_lote.py
 ````
 📂 **Estrutura do Projeto**
+=======
+```text
+Corretor_redacao_AI/
+├── app.py                  # Interface Web (Frontend Streamlit)
+├── corrigir_em_lote.py     # Script de automação via Google Drive
+├── health_check.py         # Script de diagnóstico do sistema
+├── config.py               # Gerenciador de configurações centralizado
+├── services/               # Camada de Serviços (Lógica de Negócio)
+│   ├── ai_service.py       # Comunicação com Google Gemini
+│   ├── drive_service.py    # Comunicação com Google Drive
+│   └── report_service.py   # Geração de arquivos .docx
+├── assets/                 # Recursos Estáticos
+│   ├── prompt.txt          # Prompt System com critérios de correção
+│   └── template.docx       # Modelo base para o relatório final
+├── secrets/                # Pasta segura para credenciais (ignorada pelo Git)
+└── .env                    # Variáveis de ambiente
+>>>>>>> 1e9df83 (update readme)
 ```
-├── app.py                 # Interface Web (Frontend Streamlit)
-├── logica_ia.py           # Integração com Gemini e Engenharia de Prompt
-├── corrigir_em_lote.py    # Script de automação via Google Drive
-├── gerador_docx.py        # Motor de geração de relatórios Word
-├── prompt.txt             # Prompt System com critérios do ENEM
-├── template.docx          # Modelo base para o relatório final
-└── requirements.txt       # Dependências do projeto
+
+## 🛠️ Instalação e Configuração
+
+### 1. Pré-requisitos
+- Python 3.9+ instalado.
+- Conta no **Google Cloud Platform (GCP)** com API Vertex AI/Gemini habilitada.
+- (Opcional) Credenciais OAuth do **Google Drive API** para o modo lote.
+
+### 2. Instalação
+Clone o repositório e instale as dependências:
+
+```bash
+git clone https://github.com/seu-usuario/Corretor_redacao_AI.git
+cd Corretor_redacao_AI
+
+# Criar ambiente virtual
+python -m venv venv
+# Ativar (Windows)
+venv\Scripts\activate
+# Ativar (Linux/Mac)
+source venv/bin/activate
+
+# Instalar pacotes
+pip install -r requirements.txt
 ```
+<<<<<<< HEAD
 🧠 **Desafios Técnicos Superados**
 Engenharia de Prompt com JSON: Configuração do modelo para retornar estritamente um JSON válido, evitando erros de parseamento na geração do documento final.
+=======
+>>>>>>> 1e9df83 (update readme)
 
-Integração Multimodal: Envio simultâneo de imagem e texto para o modelo interpretar a caligrafia e o conteúdo semântico em uma única chamada de API.
+### 3. Configuração de Credenciais
+Este projeto utiliza uma pasta `secrets/` para organizar chaves de API.
 
-Manipulação de Arquivos: Uso de buffers de memória (io.BytesIO) para gerar e manipular arquivos Word sem necessidade de gravação excessiva em disco.
+1.  Crie a pasta `secrets/` na raiz do projeto.
+2.  Coloque o arquivo da sua Service Account do Google Cloud lá dentro (ex: `google-credentials.json`).
+3.  (Para Drive) Coloque o `credentials.json` do OAuth Client lá dentro.
 
+<<<<<<< HEAD
 📄 **Licença**
 Este projeto está sob a licença MIT - veja o arquivo LICENSE para detalhes.
+=======
+Configure o arquivo `.env`:
+```bash
+cp .env.example .env
+```
+Edite o `.env` e ajuste os nomes dos arquivos e IDs das pastas do Drive:
+```ini
+GOOGLE_CREDENTIALS_FILE=google-credentials.json
+DRIVE_FOLDER_INPUT_ID=seu_id_da_pasta_entrada
+DRIVE_FOLDER_OUTPUT_ID=seu_id_da_pasta_saida
+GEMINI_MODEL_NAME=gemini-2.0-flash
+```
+>>>>>>> 1e9df83 (update readme)
 
-Desenvolvido por Claudio Matheus
+## 💻 Como Usar
+
+### 🏥 Diagnóstico (Health Check)
+Antes de começar, verifique se tudo está conectado corretamente:
+```bash
+python health_check.py
+```
+*Se houver erros, o script indicará exatamente o que está faltando.*
+
+### 🌐 Interface Web (Correção Individual)
+Ideal para correções rápidas e visuais.
+```bash
+streamlit run app.py
+```
+
+### 🤖 Automação em Lote (Google Drive)
+Monitora a pasta do Drive definida no `.env`, corrige as imagens que encontrar e salva os Docs na pasta de saída.
+```bash
+python corrigir_em_lote.py
+```
+
+## 🧩 Personalização
+
+- **Critérios de Correção**: Edite `assets/prompt.txt`.
+- **Layout do Relatório**: Edite `assets/template.docx`.
+
+## 📄 Licença
+Este projeto é distribuído sob a licença MIT.
