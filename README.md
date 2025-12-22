@@ -48,8 +48,8 @@ Corretor_redacao_AI/
 Clone o repositório e instale as dependências:
 
 ```bash
-git clone https://github.com/claudio1code/ProjetoMaeRedacao.git
-cd ProjetoMaeRedacao
+git clone git@github.com:claudio1code/Automated-Essay-Grader.git
+cd Automated-Essay-Grader
 
 # Criar ambiente virtual
 python -m venv venv
