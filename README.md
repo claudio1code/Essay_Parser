@@ -1,6 +1,6 @@
-# ✍️ AI Essay Grader - Corretor de Redações com IA
+# ✍️ AI Essay Parser - Corretor de Redações com IA
 
-Bem-vindo ao **AI Essay Grader**, uma solução inteligente para automatizar a correção de redações manuscritas. Utilizando o poder do modelo **Google Gemini 2.0 (Multimodal)**, o sistema lê imagens de textos manuscritos, realiza uma análise pedagógica completa baseada em competências e gera relatórios formatados em Word (.docx).
+Bem-vindo ao **AI Essay Parser**, uma solução inteligente para automatizar a correção de redações manuscritas. Utilizando o poder do modelo **Google Gemini 2.0 (Multimodal)**, o sistema lê imagens de textos manuscritos, realiza uma análise pedagógica completa baseada em competências e gera relatórios formatados em Word (.docx).
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
 ![Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%202.0-orange)
@@ -48,8 +48,8 @@ Corretor_redacao_AI/
 Clone o repositório e instale as dependências:
 
 ```bash
-git clone git@github.com:claudio1code/Automated-Essay-Grader.git
-cd Automated-Essay-Grader
+git clone git@github.com:claudio1code/Essay_Parser.git
+cd Essay_Parser
 
 # Criar ambiente virtual
 python -m venv venv
