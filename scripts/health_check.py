@@ -1,10 +1,14 @@
 import os
+import sys
+
+# Adiciona o diretório 'src' ao sys.path para permitir importações diretas
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import google.generativeai as genai
 
 from config import Config
-from logger import get_logger
-from services import ai_service
+from app.core.logger import get_logger
+from app.services import ai_service
 
 logger = get_logger(__name__)
 

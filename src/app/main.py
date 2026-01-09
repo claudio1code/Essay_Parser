@@ -5,10 +5,10 @@ from tkinter import filedialog
 
 import streamlit as st
 
+from app.core.logger import get_logger
+from app.services import ai_service, report_service
+from app.services.drive_service import GoogleDriveService
 from config import Config
-from logger import get_logger
-from services import ai_service, report_service
-from services.drive_service import GoogleDriveService
 
 # --- Configuração de Logs ---
 logger = get_logger(__name__)
@@ -78,7 +78,7 @@ with tab1:
 
     if imagem_redacao is not None:
         if st.button("Analisar Redação", type="primary", use_container_width=True):
-            temp_dir = Config.TEMP_UPLOADS_DIR
+            temp_dir = Config.TMP_DIR
             caminho_img_temp = os.path.join(temp_dir, imagem_redacao.name)
 
             try:
@@ -311,7 +311,7 @@ with tab3:
                             f"Processando ({i + 1}/{len(itens)}): {file_name}"
                         )
 
-                        caminho_temp = os.path.join(Config.TEMP_LOTE_DIR, file_name)
+                        caminho_temp = os.path.join(Config.TMP_DIR, file_name)
 
                         try:
                             # 1. Download

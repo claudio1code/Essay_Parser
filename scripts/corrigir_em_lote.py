@@ -1,9 +1,13 @@
 import os
+import sys
+
+# Adiciona o diretório 'src' ao sys.path para permitir importações diretas
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from config import Config
-from logger import get_logger
-from services import ai_service, report_service
-from services.drive_service import GoogleDriveService
+from app.core.logger import get_logger
+from app.services import ai_service, report_service
+from app.services.drive_service import GoogleDriveService
 
 # --- Configuração de Logs ---
 logger = get_logger(__name__)
@@ -13,7 +17,7 @@ def main():
     logger.info("Iniciando assistente de correção em lote...")
 
     # Garante que o diretório temporário exista
-    os.makedirs(Config.TEMP_LOTE_DIR, exist_ok=True)
+    os.makedirs(Config.TMP_DIR, exist_ok=True)
 
     try:
         # --- 1. CONFIGURAÇÃO INICIAL ---
@@ -45,7 +49,7 @@ def main():
 
             logger.info(f"--- Processando: {file_name} (ID: {file_id}) ---")
 
-            caminho_imagem_temp = os.path.join(Config.TEMP_LOTE_DIR, file_name)
+            caminho_imagem_temp = os.path.join(Config.TMP_DIR, file_name)
 
             try:
                 # Download da imagem (em bytes)

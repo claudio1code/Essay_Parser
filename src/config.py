@@ -8,7 +8,7 @@ load_dotenv()
 
 class Config:
     # Caminhos Base
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ASSETS_DIR = os.path.join(BASE_DIR, "assets")
     SECRETS_DIR = os.path.join(BASE_DIR, "secrets")
 
@@ -29,11 +29,8 @@ class Config:
     )
     PROMPT_PATH = os.path.join(ASSETS_DIR, os.getenv("PROMPT_FILE", "prompt.txt"))
 
-    # Diretórios Temporários
-    TEMP_UPLOADS_DIR = os.path.join(
-        BASE_DIR, os.getenv("TEMP_UPLOADS_DIR", "temp_uploads")
-    )
-    TEMP_LOTE_DIR = os.path.join(BASE_DIR, os.getenv("TEMP_LOTE_DIR", "temp_lote"))
+    # Diretório Temporário
+    TMP_DIR = os.path.join(BASE_DIR, os.getenv("TMP_DIR", "tmp"))
 
     # Configurações da IA
     MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
@@ -48,6 +45,5 @@ class Config:
 
 
 # Criação dos diretórios necessários se não existirem
-os.makedirs(Config.TEMP_UPLOADS_DIR, exist_ok=True)
-os.makedirs(Config.TEMP_LOTE_DIR, exist_ok=True)
+os.makedirs(Config.TMP_DIR, exist_ok=True)
 os.makedirs(Config.SECRETS_DIR, exist_ok=True)
