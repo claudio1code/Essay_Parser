@@ -10,14 +10,18 @@ def preencher_e_gerar_docx(
     dados: Dict[str, Any], caminho_template: str = Config.TEMPLATE_DOCX_PATH
 ) -> Optional[BytesIO]:
     """
-    Preenche um template .docx com os dados da redação e retorna o arquivo em memória.
-    Utiliza uma abordagem de substituição de texto robusta.
+    Preenche um template .docx com uma abordagem HÍBRIDA e simplificada,
+    assumindo que o template foi limpo e todos os placeholders são texto simples.
+    1.  Usa a lógica padrão do python-docx para substituir placeholders em parágrafos
+        e tabelas normais.
+    2.  Usa uma busca profunda com XPath para substituir placeholders em elementos
+        complexos como CAIXAS DE TEXTO.
     """
     try:
         document = Document(caminho_template)
         comps = dados.get("analise_competencias", {})
 
-        # Dicionário de Placeholders
+        # 1. Prepara o Dicionário de Substituição
         substituicoes = {
             "{{NOME_ALUNO}}": dados.get("nome_aluno", "Não identificado"),
             "{{TEMA}}": dados.get("tema_redacao", ""),
@@ -29,89 +33,48 @@ def preencher_e_gerar_docx(
         }
 
         for i in range(1, 6):
-            chave_nota = f"{{{{NOTA_C{i}}}}}"
-            chave_texto = f"{{{{ANALISE_C{i}}}}}"
-            comp_data = comps.get(f"c{i}", {})
-            substituicoes[chave_nota] = str(comp_data.get("nota", 0))
-            analise_limpa = comp_data.get("analise", "").replace("**", "").replace("#", "")
-            substituicoes[chave_texto] = analise_limpa
+            key_nota = "{{NOTA_C{}}}".format(i)
+            substituicoes[key_nota] = str(comps.get(f"c{i}", {}).get("nota", 0))
+            analise = comps.get(f"c{i}", {}).get("analise", "").replace("**", "")
+            key_analise = "{{ANALISE_C{}}}".format(i)
+            substituicoes[key_analise] = analise
 
-        # --- Lógica de Substituição ---
-        # Itera em todos os parágrafos do corpo
-        for p in document.paragraphs:
-            for codigo, valor in substituicoes.items():
-                # Usamos uma abordagem mais simples que substitui no parágrafo inteiro
-                # Isso é mais robusto contra 'runs' divididos.
-                if codigo in p.text:
-                    # Salva a formatação do primeiro 'run'
-                    style = p.runs[0].style if p.runs else None
-                    font = p.runs[0].font.name if p.runs and p.runs[0].font.name else None
-                    
-                    # Substitui o texto
-                    text = p.text.replace(codigo, str(valor))
-                    
-                    # Limpa o parágrafo e adiciona o novo texto com a formatação
-                    p.clear()
-                    run = p.add_run(text)
-                    if style:
-                        run.style = style
-                    if font:
-                        run.font.name = font
-
-
-        # Itera em todas as tabelas
+        # --- ABORDAGEM 1: LÓGICA PADRÃO (Para o corpo do texto) ---
+        # Agora que o template está limpo, podemos usar uma abordagem mais direta.
+        # Isso pode resetar a formatação do parágrafo, mas garante a substituição.
+        todos_paragrafos = list(document.paragraphs)
         for table in document.tables:
             for row in table.rows:
                 for cell in row.cells:
-                    for p in cell.paragraphs:
-                        for codigo, valor in substituicoes.items():
-                            if codigo in p.text:
-                                style = p.runs[0].style if p.runs else None
-                                font = p.runs[0].font.name if p.runs and p.runs[0].font.name else None
-                                text = p.text.replace(codigo, str(valor))
-                                p.clear()
-                                run = p.add_run(text)
-                                if style:
-                                    run.style = style
-                                if font:
-                                    run.font.name = font
-
-        # Itera nos cabeçalhos
+                    todos_paragrafos.extend(cell.paragraphs)
         for section in document.sections:
-            header = section.header
-            for p in header.paragraphs:
-                for codigo, valor in substituicoes.items():
-                    if codigo in p.text:
-                        style = p.runs[0].style if p.runs else None
-                        font = p.runs[0].font.name if p.runs and p.runs[0].font.name else None
-                        text = p.text.replace(codigo, str(valor))
-                        p.clear()
-                        run = p.add_run(text)
-                        if style:
-                            run.style = style
-                        if font:
-                            run.font.name = font
-            for table in header.tables:
+            todos_paragrafos.extend(section.header.paragraphs)
+            for table in section.header.tables:
                 for row in table.rows:
                     for cell in row.cells:
-                        for p in cell.paragraphs:
-                            for codigo, valor in substituicoes.items():
-                                if codigo in p.text:
-                                    style = p.runs[0].style if p.runs else None
-                                    font = p.runs[0].font.name if p.runs and p.runs[0].font.name else None
-                                    text = p.text.replace(codigo, str(valor))
-                                    p.clear()
-                                    run = p.add_run(text)
-                                    if style:
-                                        run.style = style
-                                    if font:
-                                        run.font.name = font
+                        todos_paragrafos.extend(cell.paragraphs)
+            todos_paragrafos.extend(section.footer.paragraphs)
+
+        for p in todos_paragrafos:
+            if not p.text.strip():
+                continue
+            for codigo, valor in substituicoes.items():
+                if codigo in p.text:
+                    p.text = p.text.replace(codigo, str(valor))
+
+        # --- ABORDAGEM 2: LÓGICA XPATH (Para Caixas de Texto) ---
+        # Executa como um finalizador para pegar o que a primeira abordagem não viu.
+        for element in document._element.xpath('.//w:t'):
+            for codigo, valor in substituicoes.items():
+                if codigo in element.text:
+                    element.text = element.text.replace(codigo, str(valor))
 
         buffer = BytesIO()
         document.save(buffer)
         buffer.seek(0)
+        logger.info(f"✅ Relatório preenchido para: {dados.get('nome_aluno')}")
         return buffer
 
     except Exception as e:
-        logger.error(f"Erro ao gerar Word: {e}")
+        logger.error(f"❌ Erro crítico no Word: {e}")
         return None
