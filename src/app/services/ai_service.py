@@ -7,6 +7,7 @@ from PIL import Image
 
 from app.core.logger import get_logger
 from config import Config
+from .vector_service import VectorService
 
 logger = get_logger(__name__)
 
@@ -115,15 +116,31 @@ def validar_e_corrigir_dados(dados: Dict[str, Any]) -> Dict[str, Any]:
     return dados
 
 
-def analisar_redacao(caminho_imagem: str, prompt: str) -> Optional[Dict[str, Any]]:
+def analisar_redacao(caminho_imagem: str, prompt: str, tema_redacao: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Analisa uma redação usando o Gemini Vision.
     Retorna um dicionário com os dados da correção.
     """
     try:
+        vector_service = VectorService()
+        referencias_encontradas = ""
+        if tema_redacao:
+            docs_referencia = vector_service.buscar_referencias(tema_redacao)
+            if docs_referencia:
+                referencias_encontradas = "\n\n### Referências para este tema:\n" + "\n---\n".join(docs_referencia)
+                logger.info("Referências RAG injetadas no prompt.")
+            else:
+                logger.info("Nenhuma referência encontrada para o tema da redação.")
+        else:
+            logger.warning("Tema da redação não fornecido para busca de referências. O RAG não será utilizado.")
+
+        # Substitui o placeholder {{REFERENCIAS}} no prompt. Se não existir, não fará nada.
+        prompt_com_referencias = prompt.replace("{{REFERENCIAS}}", referencias_encontradas)
+
+
         generation_config = genai.GenerationConfig(
             response_mime_type="application/json",
-            temperature=0.1,  # ← Mudou de 0.3 para 0.1 (mais determinístico)
+            temperature=0.2,  # Fixado em 0.2 para RAG
             max_output_tokens=8000,
         )
 
@@ -139,7 +156,7 @@ def analisar_redacao(caminho_imagem: str, prompt: str) -> Optional[Dict[str, Any
         img = Image.open(caminho_imagem)
 
         logger.info("Enviando para a IA...")
-        response = model.generate_content([prompt, img])
+        response = model.generate_content([prompt_com_referencias, img])
 
         if not response or not response.text:
             logger.error("IA retornou resposta vazia")

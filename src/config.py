@@ -29,6 +29,10 @@ class Config:
     )
     PROMPT_PATH = os.path.join(ASSETS_DIR, os.getenv("PROMPT_FILE", "prompt.txt"))
 
+    # Configurações do Vector DB e Referências
+    VECTOR_DB_PATH = os.path.join(BASE_DIR, "data", "vector_db")
+    REFERENCES_PATH = os.path.join(ASSETS_DIR, "referencias")
+
     # Diretório Temporário
     TMP_DIR = os.path.join(BASE_DIR, os.getenv("TMP_DIR", "tmp"))
 
@@ -47,3 +51,4 @@ class Config:
 # Criação dos diretórios necessários se não existirem
 os.makedirs(Config.TMP_DIR, exist_ok=True)
 os.makedirs(Config.SECRETS_DIR, exist_ok=True)
+os.makedirs(Config.VECTOR_DB_PATH, exist_ok=True)

@@ -7,3 +7,6 @@ google-api-python-client
 google-auth-oauthlib
 google-auth-httplib2
 google-auth
+chromadb
+langchain-community
+langchain-google-genai

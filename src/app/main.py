@@ -52,6 +52,17 @@ with st.sidebar:
 
     entrada_ano = st.text_input("Ano / Turma:", value="3º Ano Ensino Médio")
     entrada_bimestre = st.text_input("Bimestre:", value="1º Bimestre")
+
+    st.divider()
+    st.header("📚 RAG - Referências")
+    # Adiciona campo para Tema Central (usado para RAG)
+    entrada_tema_central = st.text_input(
+        "Tema Central da Redação (para RAG):",
+        placeholder="Ex: Inclusão social no Brasil",
+        key="tema_central_rag",
+    )
+    st.info("O tema ajuda a buscar referências relevantes para guiar a IA.")
+
     st.divider()
     st.markdown("### Instruções")
     st.write("1. Escolha entre correção individual ou em lote.")
@@ -89,8 +100,11 @@ with tab1:
                 st.stop()
 
             with st.spinner("Lendo manuscrito e avaliando competências..."):
+                # Passa o tema central para a função de análise
                 dados_redacao = ai_service.analisar_redacao(
-                    caminho_img_temp, PROMPT_MESTRE
+                    caminho_img_temp,
+                    PROMPT_MESTRE,
+                    tema_redacao=st.session_state.get("tema_central_rag"),
                 )
 
                 try:
@@ -208,7 +222,9 @@ with tab2:
                     try:
                         # 1. IA analisa
                         dados_redacao = ai_service.analisar_redacao(
-                            caminho_completo, PROMPT_MESTRE
+                            caminho_completo,
+                            PROMPT_MESTRE,
+                            tema_redacao=st.session_state.get("tema_central_rag"),
                         )
 
                         if dados_redacao:
@@ -321,7 +337,9 @@ with tab3:
 
                             # 2. IA
                             dados = ai_service.analisar_redacao(
-                                caminho_temp, PROMPT_MESTRE
+                                caminho_temp,
+                                PROMPT_MESTRE,
+                                tema_redacao=st.session_state.get("tema_central_rag"),
                             )
 
                             if dados:
