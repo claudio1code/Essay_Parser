@@ -1,4 +1,4 @@
-# 📝 Corretor de Redação AI - Sistema RAG (Profª Elaine Vaz)
+# 📝 Corretor de Redação AI - Sistema RAG
 
 [![Docker](https://img.shields.io/badge/Docker-Optimized-blue.svg)](https://www.docker.com/)
 [![Python](https://img.shields.io/badge/Python-3.12+-green.svg)](https://www.python.org/)
@@ -416,6 +416,5 @@ docker system prune -f
 
 ---
 
-**Desenvolvido com ❤️ para educação**
 
 *Versão 2.0 - Refatoração Profissional | Docker Otimizado | Performance 80% Melhor*
