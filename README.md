@@ -166,6 +166,12 @@ A interface web abrira em `http://localhost:8501` com as seguintes abas:
 
 ---
 
+## Desenvolvimento
+
+Este projeto foi desenvolvido com auxilio de ferramentas de IA generativa para aceleracao de codigo, refatoracao e documentacao. A arquitetura do sistema, os criterios pedagogicos, o design de prompt baseado nas diretrizes oficiais do MEC/INEP e as decisoes de produto sao de autoria do desenvolvedor.
+
+---
+
 ## Licenca
 
 Distribuido sob a licenca **Apache 2.0**. Consulte o arquivo [LICENSE](LICENSE) para detalhes.
