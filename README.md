@@ -1,119 +1,171 @@
-# ✍️ AI Essay Parser - Corretor de Redações com IA
+# AI Essay Parser
 
-Bem-vindo ao **AI Essay Parser**, uma solução inteligente para automatizar a correção de redações manuscritas. Utilizando o poder do modelo **Google Gemini 2.0 (Multimodal)**, o sistema lê imagens de textos manuscritos, realiza uma análise pedagógica completa baseada em competências e gera relatórios formatados em Word (.docx).
+Corretor automatizado de redações manuscritas baseado em visão computacional. Utiliza o modelo **Google Gemini** para interpretar imagens de textos escritos à mão, avaliar as cinco competências do ENEM e gerar relatórios formatados em Word (.docx).
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
-![Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%202.0-orange)
+![Gemini API](https://img.shields.io/badge/AI-Google%20Gemini-orange)
 ![Architecture](https://img.shields.io/badge/Architecture-Service%20Layer-purple)
 ![License](https://img.shields.io/badge/License-Apache%202.0-green)
 
-## 🚀 Funcionalidades
+---
 
-- **Leitura de Manuscritos**: Capacidade avançada de OCR e interpretação de texto manuscrito via IA.
-- **Correção Pedagógica**: Avaliação detalhada baseada em competências (personalizável via prompt), com atribuição de notas e comentários construtivos.
-- **Interface Web Amigável**: Aplicação interativa construída com Streamlit para uploads e correções individuais rápidas.
-- **Processamento em Lote (Batch)**: Integração com o Google Drive para monitorar uma pasta, processar novas imagens automaticamente e salvar as correções em uma pasta de saída.
-- **Arquitetura Modular**: Código organizado em serviços (`services/`), facilitando manutenção e expansão.
-- **Configuração Segura**: Gerenciamento de credenciais via variáveis de ambiente e pasta `secrets/`.
+## Funcionalidades
 
-## 📂 Estrutura do Projeto
+- **Leitura de Manuscritos** — Interpretação de texto manuscrito via visão computacional (Gemini Vision), com tratamento de caligrafia e erros de OCR.
+- **Correção Pedagógica (ENEM)** — Avaliação detalhada nas 5 competências oficiais do ENEM (C1 a C5), com notas na escala de 40 pontos e análise textual por competência.
+- **Aprendizado Contínuo (OCR)** — Sistema de feedback que permite ao professor corrigir erros de leitura da IA. As correções são salvas e injetadas automaticamente nos prompts seguintes (Few-Shot Learning).
+- **Interface Web (Streamlit)** — Aplicação com 4 abas:
+  - Correção Individual (com download em pacote ZIP: DOCX + imagem)
+  - Correção em Lote (pasta local)
+  - Correção em Lote (Google Drive)
+  - Treinamento OCR (revisão lado a lado com formulário de feedback)
+- **Relatórios em Word** — Geração automática de `.docx` a partir de template customizável, com preenchimento de notas, análises e dados da turma.
+- **Integração com Google Drive** — Upload e download de arquivos para processamento em lote na nuvem.
 
-O projeto segue o padrão **Service Layer**, separando a lógica de negócio dos scripts de execução:
+---
+
+## Estrutura do Projeto
 
 ```text
-Corretor_redacao_AI/
-├── app.py                  # Interface Web (Frontend Streamlit)
-├── corrigir_em_lote.py     # Script de automação via Google Drive
-├── health_check.py         # Script de diagnóstico do sistema
-├── config.py               # Gerenciador de configurações centralizado
-├── services/               # Camada de Serviços (Lógica de Negócio)
-│   ├── ai_service.py       # Comunicação com Google Gemini
-│   ├── drive_service.py    # Comunicação com Google Drive
-│   └── report_service.py   # Geração de arquivos .docx
-├── assets/                 # Recursos Estáticos
-│   ├── prompt.txt          # Prompt System com critérios de correção
-│   └── template.docx       # Modelo base para o relatório final
-├── secrets/                # Pasta segura para credenciais (ignorada pelo Git)
-└── .env                    # Variáveis de ambiente
+Essay_Parser/
+├── src/
+│   ├── app/
+│   │   ├── core/
+│   │   │   ├── logger.py            # Logger padronizado
+│   │   │   └── feedback_manager.py  # Gestão de feedback OCR
+│   │   ├── services/
+│   │   │   ├── ai_service.py        # Integração com Gemini API
+│   │   │   ├── drive_service.py     # Integração com Google Drive
+│   │   │   └── report_service.py    # Geração de relatórios DOCX
+│   │   └── main.py                  # Interface Web (Streamlit)
+│   └── config.py                    # Configurações centralizadas
+├── assets/
+│   ├── prompt.txt                   # Prompt do sistema (critérios ENEM)
+│   └── template.docx               # Template do relatório Word
+├── data/
+│   └── feedback_ocr.json           # Histórico de correções de leitura
+├── secrets/                         # Chaves de API e tokens (git ignored)
+├── .env                             # Variáveis de ambiente
+├── .env.example                     # Modelo de configuração
+├── requirements.txt                 # Dependências Python
+├── run.sh                           # Script de inicialização
+└── LICENSE
 ```
 
-## 🛠️ Instalação e Configuração
+---
 
-### 1. Pré-requisitos
-- Python 3.10+ instalado.
-- Conta no **Google Cloud Platform (GCP)** com API Vertex AI/Gemini habilitada.
-- (Opcional) Credenciais OAuth do **Google Drive API** para o modo lote.
+## Instalacao e Configuracao
 
-### 2. Instalação
-Clone o repositório e instale as dependências:
+### Pre-requisitos
+
+- Python 3.10 ou superior
+- Chave de API do Google Gemini ([console.cloud.google.com](https://console.cloud.google.com))
+- (Opcional) Credenciais OAuth para integração com Google Drive
+
+### 1. Clonar e instalar dependencias
 
 ```bash
 git clone git@github.com:claudio1code/Essay_Parser.git
 cd Essay_Parser
 
-# Criar ambiente virtual
 python -m venv venv
+source venv/bin/activate     # Linux/Mac
+# venv\Scripts\activate      # Windows
 
-# Ativar (Windows)
-venv\Scripts\activate
-# Ativar (Linux/Mac)
-source venv/bin/activate
-
-# Instalar pacotes
 pip install -r requirements.txt
 ```
 
-### 3. Configuração de Credenciais
-Este projeto utiliza uma pasta `secrets/` para organizar chaves de API com segurança.
+### 2. Configurar variaveis de ambiente
 
-1.  Crie a pasta `secrets/` na raiz do projeto.
-2.  Coloque o arquivo da sua Service Account do Google Cloud lá dentro (ex: `google-credentials.json`).
-3.  (Para Drive) Coloque o `credentials.json` do OAuth Client lá dentro.
+Copie o arquivo de exemplo e edite com seus dados:
 
-Configure o arquivo `.env`:
 ```bash
 cp .env.example .env
 ```
-Edite o `.env` e ajuste os nomes dos arquivos e IDs das pastas do Drive:
-```ini
-GOOGLE_CREDENTIALS_FILE=google-credentials.json
-DRIVE_FOLDER_INPUT_ID=seu_id_da_pasta_entrada
-DRIVE_FOLDER_OUTPUT_ID=seu_id_da_pasta_saida
-GEMINI_MODEL_NAME=gemini-2.0-flash
-```
 
-## 💻 Como Usar
+Variaveis principais:
 
-### 🏥 Diagnóstico (Health Check)
-Antes de começar, verifique se tudo está conectado corretamente:
-```bash
-python health_check.py
-```
-*Se houver erros, o script indicará exatamente o que está faltando.*
+| Variavel | Descricao | Exemplo |
+|---|---|---|
+| `GEMINI_API_KEY` | Chave de API do Google Gemini | `AIzaSy...` |
+| `GEMINI_MODEL_NAME` | Modelo a utilizar | `gemini-2.0-flash` |
+| `GOOGLE_CREDENTIALS_FILE` | Arquivo de Service Account (opcional) | `google-credentials.json` |
+| `DRIVE_CREDENTIALS_FILE` | Arquivo OAuth do Drive (opcional) | `credentials.json` |
+| `DRIVE_FOLDER_INPUT_ID` | ID da pasta de entrada no Drive | `1c_8ybb...` |
+| `DRIVE_FOLDER_OUTPUT_ID` | ID da pasta de saida no Drive | `16xRIP...` |
 
-### 🌐 Interface Web (Correção Individual)
-Ideal para correções rápidas e visuais.
+### 3. Configurar credenciais (opcional, para Google Drive)
 
-Para iniciar a interface web, use o script `run.sh`:
+1. Coloque os arquivos de credenciais na pasta `secrets/`.
+2. O token OAuth sera gerado automaticamente no primeiro uso do modo Drive.
+
+---
+
+## Como Usar
+
+Inicie a aplicacao com o script fornecido:
+
 ```bash
 ./run.sh
 ```
-Ou, se preferir executar diretamente (após ativar o ambiente virtual):
+
+Ou manualmente:
+
 ```bash
-streamlit run src/app/main.py
+source venv/bin/activate
+PYTHONPATH=./src streamlit run src/app/main.py
 ```
 
-### 🤖 Automação em Lote (Google Drive)
-Monitora a pasta do Drive definida no `.env`, corrige as imagens que encontrar e salva os Docs na pasta de saída.
-```bash
-python corrigir_em_lote.py
-```
+A interface web abrira em `http://localhost:8501` com as seguintes abas:
 
-## 🧩 Personalização
+### Correcao Individual
 
-- **Critérios de Correção**: Edite `assets/prompt.txt`.
-- **Layout do Relatório**: Edite `assets/template.docx`.
+1. Faca upload de uma foto da redacao (JPG/PNG).
+2. Clique em **Analisar Redacao**.
+3. Visualize a imagem ao lado do resultado (nome, nota, competencias).
+4. Baixe o pacote ZIP contendo o relatorio `.docx` e a imagem original.
 
-## 📄 Licença
+### Correcao em Lote (Local)
 
-Este projeto é distribuído sob a licença **Apache 2.0**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+1. Informe o caminho da pasta com as imagens.
+2. Informe o caminho da pasta de saida para os relatorios.
+3. Clique em **Iniciar Processamento em Lote**.
+
+### Correcao em Lote (Google Drive)
+
+1. Cole os links das pastas de entrada e saida do Drive.
+2. Clique em **Iniciar Processamento Cloud**.
+
+### Treinamento OCR
+
+1. Apos corrigir uma redacao na aba Individual, va para esta aba.
+2. Compare a imagem original com os comentarios e analises gerados.
+3. Se identificar um erro de leitura (ex: "Datapolha" no lugar de "Datafolha"), preencha o formulario e salve.
+4. A correcao sera usada automaticamente nas proximas analises.
+
+---
+
+## Personalizacao
+
+| Item | Arquivo | Descricao |
+|---|---|---|
+| Criterios de correcao | `assets/prompt.txt` | Prompt com a grade ENEM e instrucoes pedagogicas |
+| Layout do relatorio | `assets/template.docx` | Template Word com placeholders (`{{NOME_ALUNO}}`, `{{NOTA_C1}}`, etc.) |
+
+---
+
+## Tecnologias
+
+| Tecnologia | Uso |
+|---|---|
+| [Streamlit](https://streamlit.io) | Interface web |
+| [Google Gemini API](https://ai.google.dev) | Analise de imagem e texto via IA |
+| [python-docx](https://python-docx.readthedocs.io) | Geracao de relatorios Word |
+| [Pillow](https://python-pillow.org) | Manipulacao de imagens |
+| [Google Drive API](https://developers.google.com/drive) | Integracao com armazenamento em nuvem |
+
+---
+
+## Licenca
+
+Distribuido sob a licenca **Apache 2.0**. Consulte o arquivo [LICENSE](LICENSE) para detalhes.

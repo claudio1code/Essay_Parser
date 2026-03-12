@@ -1,11 +1,13 @@
 import json
 import os
+import traceback
 from typing import Any, Dict, Optional, TypedDict
 
 import google.generativeai as genai
 from PIL import Image
 
 from app.core.logger import get_logger
+from app.core import feedback_manager
 from config import Config
 
 logger = get_logger(__name__)
@@ -138,8 +140,16 @@ def analisar_redacao(caminho_imagem: str, prompt: str) -> Optional[Dict[str, Any
         logger.info(f"Carregando imagem: {caminho_imagem}")
         img = Image.open(caminho_imagem)
 
+        # Injeta o feedback de aprendizado no prompt
+        historico_feedbacks = feedback_manager.formatar_historico_para_prompt()
+        if historico_feedbacks:
+            logger.info("Injetando histórico de aprendizado (OCR Feedback) no prompt.")
+            prompt_final = prompt + historico_feedbacks
+        else:
+            prompt_final = prompt
+
         logger.info("Enviando para a IA...")
-        response = model.generate_content([prompt, img])
+        response = model.generate_content([prompt_final, img])
 
         if not response or not response.text:
             logger.error("IA retornou resposta vazia")
@@ -186,7 +196,6 @@ def analisar_redacao(caminho_imagem: str, prompt: str) -> Optional[Dict[str, Any
 
     except Exception as e:
         logger.error(f"Erro na chamada da IA: {e}")
-        import traceback
-
         logger.error(traceback.format_exc())
         return None
+

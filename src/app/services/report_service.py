@@ -1,4 +1,5 @@
 from io import BytesIO
+import traceback
 from typing import Any, Dict, Optional
 from docx import Document
 from docx.oxml.text.paragraph import CT_P
@@ -135,7 +136,7 @@ def preencher_e_gerar_docx(
     - Caixas de texto (via XPath)
     """
     try:
-        logger.info(f"📄 Abrindo template: {caminho_template}")
+        logger.info(f"Abrindo template: {caminho_template}")
         document = Document(caminho_template)
         comps = dados.get("analise_competencias", {})
 
@@ -162,26 +163,26 @@ def preencher_e_gerar_docx(
             substituicoes[f"{{{{NOTA_C{i}}}}}"] = nota
             substituicoes[f"{{{{ANALISE_C{i}}}}}"] = analise_limpa
 
-        logger.info("🔄 Iniciando substituições...")
+        logger.info("Iniciando substituições...")
         logger.info(f"   Total de placeholders: {len(substituicoes)}")
 
         # 2. Processa o CORPO do documento
-        logger.info("   📝 Processando corpo do documento...")
+        logger.info("   Processando corpo do documento...")
         for paragrafo in document.paragraphs:
             substituir_em_paragrafo(paragrafo, substituicoes)
 
         # 3. Processa TABELAS no corpo
-        logger.info("   📊 Processando tabelas no corpo...")
+        logger.info("   Processando tabelas no corpo...")
         for tabela in document.tables:
             processar_tabela(tabela, substituicoes)
 
         # 4. Processa CABEÇALHOS e RODAPÉS de todas as seções
-        logger.info("   📋 Processando cabeçalhos e rodapés...")
+        logger.info("   Processando cabeçalhos e rodapés...")
         for i, section in enumerate(document.sections):
             processar_secao(section, substituicoes)
 
         # 5. XPath como FALLBACK (caixas de texto, elementos especiais)
-        logger.info("   🔍 Processando elementos especiais (XPath)...")
+        logger.info("   Processando elementos especiais (XPath)...")
         processar_xpath_fallback(document, substituicoes)
 
         # 6. Salva o documento
@@ -189,14 +190,13 @@ def preencher_e_gerar_docx(
         document.save(buffer)
         buffer.seek(0)
         
-        logger.info(f"✅ Relatório gerado com sucesso para: {dados.get('nome_aluno')}")
+        logger.info(f"Relatório gerado com sucesso para: {dados.get('nome_aluno')}")
         return buffer
 
     except FileNotFoundError:
-        logger.critical(f"❌ Template não encontrado: {caminho_template}")
+        logger.critical(f"Template não encontrado: {caminho_template}")
         return None
     except Exception as e:
-        logger.error(f"❌ Erro ao gerar DOCX: {e}")
-        import traceback
+        logger.error(f"Erro ao gerar DOCX: {e}")
         logger.error(traceback.format_exc())
         return None
