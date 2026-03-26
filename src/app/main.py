@@ -10,6 +10,23 @@ from app.core import feedback_manager
 from app.services import ai_service, report_service
 from app.services.drive_service import GoogleDriveService
 from config import Config
+from pyzbar.pyzbar import decode
+from PIL import Image
+import json
+
+def extrair_dados_qr(caminho_imagem):
+    """Tenta encontrar e ler um QR Code na imagem da redação."""
+    try:
+        img = Image.open(caminho_imagem)
+        codigos = decode(img)
+        if codigos:
+            # Pega o primeiro QR Code encontrado
+            dados_json = codigos[0].data.decode('utf-8')
+            return json.loads(dados_json)
+        return None
+    except Exception as e:
+        logger.warning(f"QR Code não encontrado ou erro na leitura: {e}")
+        return None
 
 # --- Configuração de Logs ---
 logger = get_logger(__name__)
@@ -47,17 +64,25 @@ except Exception as e:
 st.title("📝 Corretor de Redação Enem")
 
 # --- BARRA LATERAL (Configurações da Turma) ---
+# --- BARRA LATERAL (Configurações da Turma) ---
 with st.sidebar:
     st.header("🏫 Dados da Turma")
     st.info("Estes dados sairão iguais em todas as redações.")
 
     entrada_ano = st.text_input("Ano / Turma:", value="3º Ano Ensino Médio")
     entrada_bimestre = st.text_input("Bimestre:", value="1º Bimestre")
+    
     st.divider()
+    
     st.markdown("### Instruções")
     st.write("1. Escolha entre correção individual ou em lote.")
     st.write("2. No modo individual, envie o arquivo e baixe o resultado.")
     st.write("3. No modo em lote, indique as pastas no seu computador.")
+    
+    # Bloco LGPD (Sem precisar repetir o st.sidebar)
+    st.markdown("---")
+    st.markdown("🔒 **Privacidade & LGPD**")
+    st.info("Este sistema atua apenas como Operador de dados. As imagens e textos gerados não são utilizados para treinamento de IA de terceiros e são processados de forma efêmera.")
 
 # --- Criação das Abas ---
 tab1, tab2, tab3, tab4 = st.tabs(
@@ -90,11 +115,17 @@ with tab1:
                 st.error(f"Erro ao salvar arquivo temporário: {e}")
                 st.stop()
 
-            with st.spinner("Lendo manuscrito e avaliando competências..."):
+ with st.spinner("Lendo manuscrito e avaliando competências..."):
+                
+                # Tenta ler o QR Code primeiro!
+                dados_aluno_qr = extrair_dados_qr(caminho_img_temp)
+
+                # IA analisa o texto da redação
                 dados_redacao = ai_service.analisar_redacao(
                     caminho_img_temp, PROMPT_MESTRE
                 )
 
+                # Deleta a imagem temporária do servidor (LGPD)
                 try:
                     if os.path.exists(caminho_img_temp):
                         os.remove(caminho_img_temp)
@@ -102,7 +133,15 @@ with tab1:
                     pass
 
                 if dados_redacao:
-                    dados_redacao["ano_turma"] = entrada_ano
+                    #Se achou o QR Code, ele injeta os dados exatos
+                    if dados_aluno_qr:
+                        dados_redacao["nome_aluno"] = dados_aluno_qr.get("nome", dados_redacao.get("nome_aluno"))
+                        dados_redacao["ano_turma"] = dados_aluno_qr.get("turma", entrada_ano)
+                        st.toast("✅ QR Code detectado! Identificação garantida.")
+                    else:
+                        dados_redacao["ano_turma"] = entrada_ano
+                        st.toast("⚠️ QR Code não encontrado. Usando leitura visual da IA.")
+
                     dados_redacao["bimestre"] = entrada_bimestre
 
                     # Salva os dados no Session State para a aba de Treinamento OCR
