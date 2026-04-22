@@ -109,11 +109,16 @@ Inicie a aplicacao com o script fornecido:
 ./run.sh
 ```
 
-Ou manualmente:
+O script automaticamente:
+- Ativa o ambiente virtual
+- Configura o PYTHONPATH corretamente
+- Inicia o Streamlit na porta 8501
+
+**Execucao Manual (se necessario):**
 
 ```bash
 source venv/bin/activate
-PYTHONPATH=./src streamlit run src/app/main.py
+PYTHONPATH=./src ./venv/bin/python -m streamlit run src/app/main.py
 ```
 
 A interface web abrira em `http://localhost:8501` com as seguintes abas:

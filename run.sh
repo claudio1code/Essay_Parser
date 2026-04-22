@@ -6,4 +6,4 @@
 echo "🚀 Iniciando o Corretor de Redação AI..."
 
 # Ativa o ambiente virtual e executa o Streamlit
-source venv/bin/activate && PYTHONPATH=./src streamlit run src/app/main.py
+source venv/bin/activate && PYTHONPATH=./src ./venv/bin/python -m streamlit run src/app/main.py
