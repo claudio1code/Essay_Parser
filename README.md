@@ -88,7 +88,7 @@ Variaveis principais:
 | Variavel | Descricao | Exemplo |
 |---|---|---|
 | `GEMINI_API_KEY` | Chave de API do Google Gemini | `AIzaSy...` |
-| `GEMINI_MODEL_NAME` | Modelo a utilizar | `gemini-2.0-flash` |
+| `GEMINI_MODEL_NAME` | Modelo a utilizar | `gemini-2.5-flash` |
 | `GOOGLE_CREDENTIALS_FILE` | Arquivo de Service Account (opcional) | `google-credentials.json` |
 | `DRIVE_CREDENTIALS_FILE` | Arquivo OAuth do Drive (opcional) | `credentials.json` |
 | `DRIVE_FOLDER_INPUT_ID` | ID da pasta de entrada no Drive | `1c_8ybb...` |
